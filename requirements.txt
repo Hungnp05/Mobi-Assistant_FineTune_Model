@@ -1,0 +1,20 @@
+# Core ML libraries
+torch>=2.2.0
+transformers>=4.44.0
+datasets>=2.20.0
+accelerate>=0.33.0
+peft>=0.12.0
+trl>=0.9.6
+bitsandbytes>=0.43.0
+
+# Data generation
+faker>=25.0.0
+
+# Model conversion (cài riêng nếu chỉ generate data, không cần convert)
+# ai-edge-torch-nightly
+# mediapipe
+
+# Utilities
+sentencepiece>=0.2.0
+protobuf>=4.25.0
+huggingface_hub>=0.24.0
