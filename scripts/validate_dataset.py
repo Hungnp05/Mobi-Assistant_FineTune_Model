@@ -72,9 +72,9 @@ def main():
               f"(min={min(input_lengths)}, max={max(input_lengths)})")
 
     if invalid_json + invalid_action == 0:
-        print("\n✅ Dataset hợp lệ, sẵn sàng để training.")
+        print("\n Dataset hợp lệ, sẵn sàng để training.")
     else:
-        print(f"\n⚠️  Có {invalid_json + invalid_action} dòng lỗi — kiểm tra lại "
+        print(f"\n Có {invalid_json + invalid_action} dòng lỗi — kiểm tra lại "
               f"generate_dataset.py nếu số lượng lỗi lớn.")
 
 

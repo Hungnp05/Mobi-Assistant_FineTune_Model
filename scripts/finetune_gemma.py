@@ -14,9 +14,7 @@ from transformers import (
 from trl import SFTTrainer, SFTConfig
 
 
-# ============================================================
 # 1. FORMAT PROMPT — ghép instruction + input + output theo chuẩn Gemma
-# ============================================================
 def format_example(example):
     """
     Gemma chat template:
@@ -49,9 +47,7 @@ def load_and_prepare_dataset(train_file, val_file, tokenizer):
     return train_ds, val_ds
 
 
-# ============================================================
 # 2. LOAD MODEL với 4-bit quantization để fit GPU nhỏ (QLoRA)
-# ============================================================
 def load_model_and_tokenizer(base_model_name, use_4bit=True):
     tokenizer = AutoTokenizer.from_pretrained(base_model_name)
     tokenizer.pad_token = tokenizer.eos_token
@@ -81,9 +77,7 @@ def load_model_and_tokenizer(base_model_name, use_4bit=True):
     return model, tokenizer
 
 
-# ============================================================
 # 3. LORA CONFIG — chỉ train một phần nhỏ tham số, nhẹ và nhanh
-# ============================================================
 def get_lora_config():
     return LoraConfig(
         r=16,                    # rank — tăng lên 32/64 nếu cần model học sâu hơn
@@ -98,9 +92,7 @@ def get_lora_config():
     )
 
 
-# ============================================================
 # 4. MAIN TRAINING LOOP
-# ============================================================
 def main():
     parser = argparse.ArgumentParser(description="Fine-tune Gemma for Mobi-Assistant intent parsing")
     parser.add_argument("--base-model", type=str, default="google/gemma-2-2b-it",

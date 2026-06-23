@@ -1,25 +1,3 @@
-"""
-generate_dataset.py
-====================
-Sinh dữ liệu huấn luyện cho việc fine-tune Gemma để hiểu lệnh tiếng Việt
-trên Mobi-Assistant: đặt báo thức, tìm tin tức, tóm tắt email, giới hạn app,
-và các intent mở rộng khác.
-
-Cách chạy:
-    pip install faker
-    python generate_dataset.py --count 5000 --output ../data/train.jsonl
-
-Mỗi dòng trong file output là 1 JSON object dạng:
-{
-    "instruction": "<system prompt>",
-    "input": "<câu lệnh người dùng>",
-    "output": "<JSON intent mong muốn model trả về>"
-}
-
-Định dạng output này tương thích trực tiếp với Hugging Face TRL's SFTTrainer
-(dùng cho script finetune_gemma.py đi kèm).
-"""
-
 import argparse
 import json
 import random
@@ -54,6 +32,17 @@ APPS = {
     "Spotify": "com.spotify.music",
     "Netflix": "com.netflix.mediaclient",
     "Gmail": "com.google.android.gm",
+    "Viber": "com.viber.voip",
+    "Line": "jp.naver.line.android",
+    "WhatsApp": "com.whatsapp",
+    "Tinder": "com.tinder",
+    "Grab": "com.grabtaxi.passenger",
+    "Be": "com.be.driver",
+    "Tiki": "com.tiki.android",
+    "Sendo": "com.sendo.android",
+    "Momo": "com.momo.android",
+    "ZingMP3": "com.zing.mp3",
+    "VieON": "com.vieon.android",
 }
 
 NEWS_TOPICS_VI = [
@@ -61,12 +50,21 @@ NEWS_TOPICS_VI = [
     "crypto", "bất động sản", "thời tiết", "giáo dục", "y tế", "du lịch",
     "ô tô điện", "trí tuệ nhân tạo", "game", "phim ảnh", "âm nhạc",
     "chính trị", "covid", "biến đổi khí hậu", "khởi nghiệp", "startup",
+    "bóng đá quốc tế", "cổ phiếu", "thị trường chứng khoán", "ngân hàng",
+    "lạm phát", "giá vàng", "dầu khí", "năng lượng tái tạo", "xe máy điện",
+    "smartphone", "5G", "metaverse", "blockchain", "NFT", "âm nhạc Kpop",
+    "phim Việt Nam", "series Netflix", "bóng chuyền", "Olympic",
+    "bầu cử", "quốc hội", "ngoại giao", "môi trường", "ô nhiễm",
 ]
 
 NEWS_TOPICS_EN = [
     "artificial intelligence", "technology", "sports", "stock market",
     "climate change", "space exploration", "cryptocurrency", "politics",
     "health", "travel", "electric vehicles", "gaming", "movies", "music",
+    "soccer", "international relations", "inflation", "gold prices",
+    "renewable energy", "smartphones", "5G technology", "blockchain",
+    "metaverse", "NFT", "Kpop", "Hollywood", "cybersecurity", "AI ethics",
+    "remote work", "mental health", "sustainable living", "fintech",
 ]
 
 # Các cách diễn đạt thời gian tương đối trong tiếng Việt -> ngày offset
@@ -81,6 +79,12 @@ RELATIVE_DAYS_VI = {
     "3 ngày nữa": 3,
     "tuần sau": 7,
     "tuần tới": 7,
+    "cuối tuần này": 5,
+    "thứ 2 tới": 7,
+    "tuần này": 0,
+    "ngày mai lúc": 1,
+    "4 ngày nữa": 4,
+    "5 ngày nữa": 5,
 }
 
 # Buổi trong ngày -> khung giờ ngẫu nhiên hợp lý
@@ -91,6 +95,8 @@ TIME_OF_DAY_VI = {
     "tối": (18, 22),
     "đêm": (22, 23),
     "khuya": (23, 23),
+    "sớm": (6, 9),
+    "buổi sáng sớm": (5, 8),
 }
 
 
@@ -137,6 +143,12 @@ def gen_set_alarm(n):
         "please set an alarm at {time}",
         "can you set an alarm for {time}",
         "I need an alarm at {time} {day_en}",
+        "báo thức cho tôi vào {time} {day}",
+        "đặt nhắc nhở lúc {time}",
+        "tạo báo thức {time} sáng mai",
+        "wake me tomorrow at {time}",
+        "set alarm tomorrow {time}",
+        "đánh thức tôi lúc {time}",
     ]
 
     templates_period = [
@@ -147,6 +159,9 @@ def gen_set_alarm(n):
         "đặt báo thức {h}h{m} {period} {day} giúp tôi",
         "tôi muốn báo thức lúc {h} giờ {period}",
         "set an alarm for {h} {period_en} {day_en}",
+        "báo thức {period} {h} giờ {day}",
+        "đặt báo thức vào buổi {period} lúc {h}h",
+        "wake me up in the {period_en} at {h}",
     ]
 
     templates_recurring = [
@@ -159,6 +174,10 @@ def gen_set_alarm(n):
         "set a daily alarm at {time}",
         "remind me every day at {time}",
         "set a recurring alarm for {time}",
+        "báo thức {time} mỗi sáng chủ nhật",
+        "đặt báo thức hàng tuần vào {time}",
+        "daily reminder at {time}",
+        "set alarm every weekday at {time}",
     ]
 
     days_vi = list(RELATIVE_DAYS_VI.keys())
@@ -177,7 +196,7 @@ def gen_set_alarm(n):
             )
             label = random.choice([
                 "Báo thức", "Alarm", "Dậy thôi", "Nhắc việc",
-                "Thức dậy", "Wake up", "Đi làm", "Họp"
+                "Thức dậy", "Wake up", "Đi làm", "Họp", "Tập gym", "Ăn sáng"
             ])
 
             user_input = tmpl.format(
@@ -252,6 +271,11 @@ def gen_cancel_alarm(n):
         "tắt báo thức {time} đi",
         "cancel the alarm at {time}",
         "remove my {time} alarm",
+        "hủy hết báo thức {time}",
+        "xóa báo thức sáng mai",
+        "turn off alarm for {time}",
+        "delete the {time} alarm",
+        "bỏ báo thức lúc {time} giúp tôi",
     ]
     examples = []
     for _ in range(n):
@@ -261,7 +285,7 @@ def gen_cancel_alarm(n):
         output = {
             "action": "CANCEL_ALARM",
             "confidence": round(random.uniform(0.9, 0.98), 2),
-            "language": "en" if "cancel" in tmpl or "remove" in tmpl else "vi",
+            "language": "en" if "cancel" in tmpl or "remove" in tmpl or "delete" in tmpl or "turn off" in tmpl else "vi",
             "entities": {"time": time_str},
             "response_text": f"Đã hủy báo thức lúc {time_str}.",
             "clarification": "",
@@ -279,6 +303,10 @@ def gen_fetch_news(n):
         "cho tôi xem tin tức {topic}",
         "tóm tắt tin tức {topic} hôm nay",
         "cập nhật tin {topic} mới nhất",
+        "tin nóng về {topic}",
+        "bản tin {topic} hôm nay",
+        "đọc tin {topic} cho tôi",
+        "update me on {topic}",
     ]
     templates_vi_scheduled = [
         "tìm tin tức về {topic} và tổng hợp lại mỗi {time} sáng",
@@ -286,12 +314,16 @@ def gen_fetch_news(n):
         "mỗi ngày lúc {time} hãy tổng hợp tin tức {topic} cho tôi",
         "tự động cập nhật tin {topic} vào {time} mỗi sáng",
         "tổng hợp tin {topic} lúc {time} mỗi ngày giúp tôi",
+        "lên lịch tin tức {topic} lúc {time} sáng hàng ngày",
+        "mỗi sáng {time} báo tin {topic} cho tôi",
     ]
     templates_en = [
         "find news about {topic}",
         "what's the latest on {topic}",
         "summarize {topic} news every day at {time}",
         "give me daily updates about {topic} at {time}",
+        "latest news on {topic} please",
+        "daily briefing on {topic} at {time}",
     ]
 
     examples = []
@@ -353,21 +385,26 @@ def gen_summarize_email(n):
         "mỗi sáng {time} hãy tóm tắt {count} email mới cho tôi",
         "đọc tóm tắt {count} email mới nhất lúc {time}",
         "tổng hợp {count} mail mới vào {time} mỗi sáng giúp tôi",
+        "tóm tắt inbox {count} email lúc {time}",
+        "daily email summary of {count} at {time}",
     ]
     templates_count_only = [
         "tóm tắt {count} email mới nhất",
         "cho tôi xem tóm tắt {count} mail gần đây",
         "tóm tắt giúp tôi {count} email chưa đọc",
+        "tóm tắt {count} email gần đây nhất",
+        "brief me on my last {count} emails",
     ]
     templates_en = [
         "summarize my last {count} emails at {time}",
         "give me a summary of {count} recent emails every morning at {time}",
         "summarize {count} unread emails",
+        "email digest for {count} messages",
     ]
 
     examples = []
     for _ in range(n):
-        count = random.choice([3, 5, 10, 15, 20])
+        count = random.choice([3, 5, 10, 15, 20, 25, 30])
         kind = random.choice(["count_time", "count_only", "en"])
 
         if kind == "count_time":
@@ -432,6 +469,8 @@ def gen_set_app_limit(n):
         "{app} chỉ được dùng {minutes} phút một ngày",
         "đặt hạn mức {minutes} phút mỗi ngày cho {app}",
         "tôi muốn giới hạn {app} trong {minutes} phút",
+        "set daily limit {minutes} phút cho {app}",
+        "giới hạn {app} còn lại {minutes} phút hôm nay",
     ]
     templates_vi_hours = [
         "giới hạn {app} {hours} giờ mỗi ngày",
@@ -439,6 +478,7 @@ def gen_set_app_limit(n):
         "hạn chế {app} chỉ {hours} giờ/ngày",
         "cho tôi dùng {app} tối đa {hours} giờ mỗi ngày",
         "{app} chỉ được dùng {hours} tiếng một ngày",
+        "giới hạn {app} tối đa {hours} tiếng/ngày",
     ]
     templates_en = [
         "limit {app} to {minutes} minutes per day",
@@ -447,6 +487,7 @@ def gen_set_app_limit(n):
         "restrict {app} usage to {minutes} minutes daily",
         "only allow {minutes} minutes of {app} per day",
         "cap {app} at {hours} hours a day",
+        "set screen time limit for {app} to {minutes} minutes",
     ]
 
     examples = []
@@ -456,7 +497,7 @@ def gen_set_app_limit(n):
         kind = random.choice(["vi_min", "vi_hour", "en"])
 
         if kind == "vi_min":
-            minutes = random.choice([10, 15, 20, 25, 30, 40, 45, 50, 60, 75, 90, 100, 120, 150, 180])
+            minutes = random.choice([10, 15, 20, 25, 30, 40, 45, 50, 60, 75, 90, 100, 120, 150, 180, 240])
             tmpl = random.choice(templates_vi)
             user_input = tmpl.format(app=app_name, minutes=minutes)
             output = {
@@ -472,7 +513,7 @@ def gen_set_app_limit(n):
                 "clarification": "",
             }
         elif kind == "vi_hour":
-            hours = random.choice([1, 2, 3, 4, 5])
+            hours = random.choice([1, 2, 3, 4, 5, 6])
             tmpl = random.choice(templates_vi_hours)
             user_input = tmpl.format(app=app_name, hours=hours)
             output = {
@@ -490,7 +531,7 @@ def gen_set_app_limit(n):
         else:
             tmpl = random.choice(templates_en)
             if "{minutes}" in tmpl:
-                minutes = random.choice([10, 15, 20, 30, 45, 60, 90, 120])
+                minutes = random.choice([10, 15, 20, 30, 45, 60, 90, 120, 180])
                 user_input = tmpl.format(app=app_name, minutes=minutes)
             else:
                 hours = random.choice([1, 2, 3, 4])
@@ -518,10 +559,15 @@ def gen_block_unblock_app(n):
     block_templates = [
         "khóa {app}", "khóa ứng dụng {app} lại", "chặn {app} ngay",
         "block {app}", "lock {app} now",
+        "tắt {app} tạm thời",
+        "không cho dùng {app} nữa",
+        "block access to {app}",
     ]
     unblock_templates = [
         "mở khóa {app}", "bỏ chặn {app}", "cho tôi dùng {app} lại",
         "unblock {app}", "unlock {app}",
+        "bật lại {app}",
+        "restore access to {app}",
     ]
 
     examples = []
@@ -566,11 +612,16 @@ def gen_query_usage(n):
         "xem báo cáo sử dụng {app} tháng này",
         "how much time did I spend on {app} today",
         "show my {app} usage this week",
+        "thời gian dùng {app} hôm nay là bao nhiêu",
+        "báo cáo sử dụng {app} tuần qua",
+        "screen time for {app} this month",
+        "how long have I used {app} today",
     ]
     periods = {
         "hôm nay": "today", "today": "today",
         "tuần này": "week", "this week": "week",
         "tháng này": "month",
+        "tuần qua": "week",
     }
 
     examples = []
@@ -603,11 +654,16 @@ def gen_wifi_dnd(n):
         "tắt wifi lúc {time}", "bật wifi lúc {time}",
         "tự động tắt wifi vào {time} mỗi tối",
         "turn off wifi at {time}",
+        "bật WiFi lúc {time} sáng mai",
+        "schedule wifi off at {time}",
+        "tắt mạng wifi từ {time}",
     ]
     templates_dnd = [
         "bật chế độ không làm phiền từ {time1} đến {time2}",
         "kích hoạt do not disturb từ {time1} tới {time2}",
         "enable do not disturb from {time1} to {time2}",
+        "bật DND từ {time1} đến {time2}",
+        "turn on silent mode from {time1} to {time2}",
     ]
 
     examples = []
@@ -617,7 +673,7 @@ def gen_wifi_dnd(n):
             tmpl = random.choice(templates_wifi)
             time_str = time_from_period(random.choice(["tối", "đêm", "sáng"]))
             user_input = tmpl.format(time=time_str)
-            action = "on" if "bật" in user_input else "off"
+            action = "on" if "bật" in user_input or "turn on" in user_input else "off"
             output = {
                 "action": "SET_WIFI_SCHEDULE",
                 "confidence": round(random.uniform(0.88, 0.97), 2),
@@ -656,6 +712,9 @@ def gen_unknown(n):
         "ngày hôm nay là ngày gì", "what can you do",
         "tell me a joke", "how are you", "hmm what",
         "blah blah blah", "...", "test test 123",
+        "gì vậy", "ok ok", "thử xem", "hello assistant",
+        "bạn làm được gì", "random command", "test function",
+        "hôm nay ăn gì", "thời tiết hôm nay",
     ]
     help_outputs = (
         "Tôi có thể giúp bạn:\n"
@@ -669,7 +728,7 @@ def gen_unknown(n):
     examples = []
     for _ in range(n):
         user_input = random.choice(vague_inputs)
-        is_help_question = user_input in ["bạn có thể làm những gì", "what can you do"]
+        is_help_question = user_input in ["bạn có thể làm những gì", "what can you do", "bạn làm được gì"]
         output = {
             "action": "UNKNOWN",
             "confidence": round(random.uniform(0.1, 0.5), 2),
